@@ -4,9 +4,10 @@
 
 MSK Pulse is an end-to-end project built around a simulated 12-clinic MSK provider network: referrals, intake, prior authorizations, visits, PT adherence, and patient engagement over 24 months. It answers the kind of open-ended operational questions a product/ops-facing data science team owns — where patients drop off, how cohorts retain, whether a feature launch worked, why one clinic underperforms — and then builds a model to act on the biggest finding.
 
-**Live demo (dashboard):** https://msk-pulse.streamlit.app
+**Live dashboard:** https://msk-pulse.streamlit.app
 **Live scoring API (Hugging Face Space):** https://huggingface.co/spaces/gururaj09/msk-pulse-api
 **Repository:** https://github.com/Gururaj15/msk-pulse
+**Write-up:** [Catching the Denial Before It Happens: Inside MSK Pulse](https://medium.com/@gururajst23/catching-the-denial-before-it-happens-inside-msk-pulse-5e56a314dccf)
 
 > All data in this repository is synthetic — see [Data note](#data-note) below.
 
@@ -59,17 +60,19 @@ Everything else in the repo is the supporting analytics infrastructure a team ac
 
 ## Architecture
 
-```
-Synthetic data generator  →  DuckDB + dbt warehouse  →  Metrics dictionary
-                                      ↓
-                     Analytics modules (funnel, cohorts, anomaly, launch, deep-dive)
-                                      ↓
-                  Prior-auth denial-risk model (XGBoost, calibrated, SHAP-explained)
-                                      ↓
-                Gradio Space (scoring API + demo)   +   Streamlit ops dashboard
-```
+![MSK Pulse architecture diagram](docs/architecture.png)
 
 The API and dashboard are two separate deployable pieces that talk to each other over HTTP: the dashboard's "Prior-Auth Risk Screen" page calls the deployed Space to score a submission and renders the result, exactly the way a real internal tool would call out to a model service.
+
+## Documentation
+
+Two longer documents live in [`docs/`](docs/), beyond this README:
+
+| Document | What it covers |
+|---|---|
+| [`docs/MSK_Pulse_Documentation.pdf`](docs/MSK_Pulse_Documentation.pdf) ([.docx](docs/MSK_Pulse_Documentation.docx)) | Full project documentation — business purpose, every technology choice and the alternatives considered, the real engineering problems hit during build/deploy and how each was resolved, design trade-offs, current limitations, and a detailed future roadmap. |
+| [`docs/MSK_Pulse_Business_Alignment.pdf`](docs/MSK_Pulse_Business_Alignment.pdf) | A short summary of why this project was built and how its scope maps to an operations/analytics + ML function at a health-tech company. |
+| [Medium write-up](https://medium.com/@gururajst23/catching-the-denial-before-it-happens-inside-msk-pulse-5e56a314dccf) | A narrative walkthrough of the project — the analytics story, the model, and the real deployment problems hit along the way and how each was fixed. |
 
 ## Repository structure
 
