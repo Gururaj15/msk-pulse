@@ -51,7 +51,7 @@ HF_TOKEN = _get_hf_token()
 @st.cache_resource
 def get_scoring_client():
     if HF_TOKEN:
-        return Client(GRADIO_SPACE_URL, hf_token=HF_TOKEN)
+        return Client(GRADIO_SPACE_URL, token=HF_TOKEN)
     return Client(GRADIO_SPACE_URL)
 
 st.set_page_config(page_title="MSK Pulse", page_icon="🦴", layout="wide")
