@@ -18,7 +18,6 @@ import math
 from datetime import date
 
 import gradio as gr
-
 from model_loader import get_model_bundle
 
 # Some Hugging Face accounts default free Gradio Spaces to ZeroGPU hardware
@@ -99,8 +98,8 @@ demo = gr.Interface(
         "(see the full project on GitHub). This same function is callable as an API — "
         "see the 'Use via API' link at the bottom of this page once deployed."
     ),
-        flagging_mode="never",
-        api_name="score",
+    flagging_mode="never",
+    api_name="score",
 )
 
 if __name__ == "__main__":
