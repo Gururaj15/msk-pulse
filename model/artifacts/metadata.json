@@ -1,0 +1,84 @@
+{
+  "model_version": "v1",
+  "trained_at": "2026-08-21T02:51:52.500465+00:00",
+  "feature_columns": [
+    "payer",
+    "condition",
+    "icd10_code",
+    "cpt_code",
+    "clinic_id",
+    "sex",
+    "age",
+    "ops_quality",
+    "submit_month_sin",
+    "submit_month_cos"
+  ],
+  "categorical_features": [
+    "payer",
+    "condition",
+    "icd10_code",
+    "cpt_code",
+    "clinic_id",
+    "sex"
+  ],
+  "numeric_features": [
+    "age",
+    "ops_quality",
+    "submit_month_sin",
+    "submit_month_cos"
+  ],
+  "denial_risk_threshold": 0.2242424488067627,
+  "target_denial_recall": 0.8,
+  "metrics": {
+    "test_roc_auc_approval": 0.6791,
+    "test_roc_auc_approval_calibrated": 0.6755,
+    "test_pr_auc_denial_class": 0.4285,
+    "denial_recall_at_threshold": 0.8165,
+    "denial_precision_at_threshold": 0.3627,
+    "n_train": 26525,
+    "n_calib": 5684,
+    "n_test": 5684
+  },
+  "top_shap_features": [
+    {
+      "feature": "cpt_code_97110",
+      "mean_abs_shap": 0.36823999881744385
+    },
+    {
+      "feature": "cpt_code_97140",
+      "mean_abs_shap": 0.2433430552482605
+    },
+    {
+      "feature": "payer_Medicaid (State)",
+      "mean_abs_shap": 0.1964389681816101
+    },
+    {
+      "feature": "payer_UnitedHealthcare",
+      "mean_abs_shap": 0.1557897925376892
+    },
+    {
+      "feature": "payer_Medicare Part B",
+      "mean_abs_shap": 0.1475236713886261
+    },
+    {
+      "feature": "ops_quality",
+      "mean_abs_shap": 0.07571099698543549
+    },
+    {
+      "feature": "cpt_code_97116",
+      "mean_abs_shap": 0.05583823472261429
+    },
+    {
+      "feature": "age",
+      "mean_abs_shap": 0.05241905152797699
+    },
+    {
+      "feature": "payer_BCBS PPO",
+      "mean_abs_shap": 0.039910681545734406
+    },
+    {
+      "feature": "submit_month_cos",
+      "mean_abs_shap": 0.0394800528883934
+    }
+  ]
+}

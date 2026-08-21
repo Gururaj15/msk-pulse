@@ -1,0 +1,43 @@
+version: 2
+
+models:
+  - name: stg_clinics
+    columns:
+      - name: clinic_id
+        tests: [unique, not_null]
+
+  - name: stg_patients
+    columns:
+      - name: patient_id
+        tests: [unique, not_null]
+      - name: clinic_id
+        tests: [not_null]
+      - name: sex
+        tests:
+          - accepted_values:
+              arguments:
+                values: ['F', 'M']
+
+  - name: stg_referrals
+    columns:
+      - name: patient_id
+        tests: [unique, not_null]
+      - name: did_intake
+        tests: [not_null]
+
+  - name: stg_prior_auths
+    columns:
+      - name: patient_id
+        tests: [not_null]
+      - name: approved
+        tests: [not_null]
+      - name: decision_days
+        tests:
+          - not_null
+
+  - name: stg_visits
+    columns:
+      - name: patient_id
+        tests: [not_null]
+      - name: attended
+        tests: [not_null]

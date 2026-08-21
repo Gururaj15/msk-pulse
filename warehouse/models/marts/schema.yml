@@ -1,0 +1,38 @@
+version: 2
+
+models:
+  - name: patient_journey
+    description: >
+      One row per patient covering the full referral -> intake -> prior auth
+      -> first visit -> 90-day active funnel. Primary table for funnel and
+      cohort analyses.
+    columns:
+      - name: patient_id
+        tests: [unique, not_null]
+
+  - name: auth_facts
+    description: One row per prior-authorization request. Training table for the denial-risk model.
+    columns:
+      - name: patient_id
+        tests: [not_null]
+      - name: approved
+        tests: [not_null]
+
+  - name: engagement_daily
+    description: Unioned visit + message events per patient per day, for engagement scoring.
+
+  - name: clinic_monthly_metrics
+    description: Clinic x month rollup of core operational metrics. Backs the exec dashboard.
+    columns:
+      - name: clinic_id
+        tests: [not_null]
+
+  - name: dq_denial_reason_monitor
+    description: >
+      Monitors the monthly null-rate of denial_reason_code by payer. Used to
+      detect the planted BCBS PPO feed-break anomaly (see analyses/04).
+      Configured with severity: warn (not error) so this repo's historical,
+      already-broken BCBS PPO months don't fail CI on every run -- in a real
+      warehouse with clean history, flip severity to error in
+      tests/dq_denial_reason_completeness.sql so a future feed break fails
+      the build immediately instead of being found later.

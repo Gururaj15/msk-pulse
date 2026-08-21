@@ -1,0 +1,106 @@
+# MSK Pulse Metrics Dictionary
+#
+# This is the single source of truth for how core metrics are defined.
+# Every dashboard, analysis, and memo in this repo pulls its numbers from
+# these definitions -- if a number disagrees with this file, the number is
+# wrong, not the file.
+#
+# Each metric lists: what it means in plain English, the exact grain it's
+# computed at, the canonical SQL (against the marts layer), who owns the
+# definition, and known edge cases / gotchas.
+
+metrics:
+
+  - name: intake_rate
+    owner: data_science
+    grain: clinic x month
+    description: >
+      Share of referred patients who complete intake (i.e. show up and are
+      registered as a patient) within the observation window.
+    sql: |
+      avg(case when did_intake then 1.0 else 0.0 end)
+      -- from marts.patient_journey, grouped by clinic_id, referral_month
+    edge_cases:
+      - Referrals in the last 10 days of the data window are systematically
+        under-counted for intake (right-censoring) -- exclude the most
+        recent 2 weeks from trend charts.
+      - Does not distinguish "declined care" from "administrative no-show";
+        both count as a non-intake.
+
+  - name: auth_approval_rate
+    owner: data_science
+    grain: payer x month (also cut by clinic, CPT)
+    description: >
+      Share of *submitted* prior-authorization requests that are approved.
+      Denominator is submitted auths, not all referrals.
+    sql: |
+      avg(case when approved then 1.0 else 0.0 end)
+      -- from marts.auth_facts where auth_submit_date is not null, grouped by payer, auth_month
+    edge_cases:
+      - Pending/in-review auths at the time of a snapshot should be excluded
+        from the denominator, not counted as denials.
+      - See dq_denial_reason_monitor for a known data-quality issue with
+        denial_reason_code on one payer feed (does not affect this rate,
+        only the reason breakdown).
+
+  - name: retention_90d_rate
+    owner: data_science
+    grain: cohort (referral month) x clinic
+    description: >
+      Of patients who had a first visit, the share still clinically active
+      (a visit) at least 90 days after their first visit.
+    sql: |
+      avg(case when did_first_visit then
+            case when active_at_90_days then 1.0 else 0.0 end end)
+      -- from marts.patient_journey
+    edge_cases:
+      - Undefined (NULL) for patients with no first visit -- always filter
+        to did_first_visit = true before averaging, or the rate is diluted.
+      - Cohorts referred in the last 90 days of the data window cannot be
+        scored yet; exclude them rather than showing a misleadingly low rate.
+
+  - name: engagement_score
+    owner: data_science
+    grain: patient x as-of-date
+    description: >
+      A 0-1 recency/frequency score blending visit attendance and message
+      responsiveness in the trailing 60 days. Used as a leading indicator
+      of churn risk, not a metric reported externally.
+    sql: |
+      -- see analyses/02_cohorts_retention/engagement_score.py for the full
+      -- weighted implementation (0.6 * visit_recency_component +
+      -- 0.4 * message_response_component)
+    edge_cases:
+      - Patients with zero trailing-60-day events score 0, which conflates
+        "churned" with "not yet due for a visit" -- always cross-check
+        against expected visit cadence for the condition.
+
+  - name: visit_conversion_rate
+    owner: data_science
+    grain: clinic x month
+    description: >
+      Of patients whose prior auth was approved, the share who attend at
+      least one visit.
+    sql: |
+      avg(case when auth_approved then
+            case when did_first_visit then 1.0 else 0.0 end end)
+      -- from marts.patient_journey
+    edge_cases:
+      - Approved-but-not-yet-visited patients in the trailing 2 weeks should
+        be excluded (visit scheduling lag), same right-censoring caveat as
+        intake_rate.
+
+  - name: denial_reason_missing_rate
+    owner: data_science (data quality)
+    grain: payer x month
+    description: >
+      Data-quality monitor, not a business metric: the share of denied
+      auths missing a denial_reason_code. Should sit near a low stable
+      baseline; a jump toward 100% for one payer indicates an upstream
+      feed break (see analyses/04_anomaly_postmortem).
+    sql: |
+      avg(case when denial_reason_code is null then 1.0 else 0.0 end)
+      -- from marts.dq_denial_reason_monitor, filtered to approved = false
+    edge_cases:
+      - A real (non-bug) source of missing reason codes is auto-denials from
+        certain automated payer rules -- baseline is ~3-5%, not exactly 0.

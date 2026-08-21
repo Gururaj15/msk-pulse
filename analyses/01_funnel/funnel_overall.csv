@@ -1,0 +1,6 @@
+stage,n,pct_of_referred,pct_of_prior_stage
+referred,44212,100.0,100.0
+intake,36260,82.0,82.0
+auth_submitted,36260,82.0,100.0
+auth_approved,26228,59.3,72.3
+first_visit,25650,58.0,97.8

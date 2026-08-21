@@ -1,0 +1,7 @@
+payer,n,median_survival_days
+Medicaid (State),2720,26.0
+BCBS PPO,3949,34.0
+UnitedHealthcare,4765,35.0
+Aetna Commercial,4913,36.0
+Cigna,3060,36.0
+Medicare Part B,6566,36.0

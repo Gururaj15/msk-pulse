@@ -1,0 +1,50 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements.txt
+
+      - name: Lint (ruff)
+        run: ruff check . --output-format=github
+
+      - name: Generate synthetic data
+        run: python data_generator/generate.py --out data/raw --seed 42
+
+      - name: dbt build
+        working-directory: warehouse
+        run: dbt build --profiles-dir .
+
+      - name: Render metrics dictionary
+        working-directory: metrics
+        run: python render_dictionary.py
+
+      - name: Run analyses (smoke test — they must run end to end without error)
+        run: |
+          for dir in analyses/01_funnel analyses/02_cohorts_retention analyses/03_feature_launch analyses/04_anomaly_postmortem analyses/05_clinic_deep_dive; do
+            echo "Running $dir"
+            (cd "$dir" && python run.py)
+          done
+
+      - name: Train model
+        working-directory: model
+        run: python train.py
+
+      - name: API tests
+        working-directory: api
+        run: pytest tests/ -v

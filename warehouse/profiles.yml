@@ -1,0 +1,9 @@
+# Local dbt profile for MSK Pulse. Points at a DuckDB file in this folder.
+# To run: from warehouse/, `dbt build --profiles-dir .`
+msk_pulse:
+  target: dev
+  outputs:
+    dev:
+      type: duckdb
+      path: msk_pulse.duckdb
+      threads: 4

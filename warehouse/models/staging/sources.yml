@@ -1,0 +1,13 @@
+version: 2
+
+sources:
+  - name: raw
+    meta:
+      external_location: "../data/raw/{name}.parquet"
+    tables:
+      - name: clinics
+      - name: patients
+      - name: referrals
+      - name: prior_auths
+      - name: visits
+      - name: messages
