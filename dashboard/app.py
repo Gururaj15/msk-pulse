@@ -29,9 +29,29 @@ METRICS_YML = HERE.parent / "metrics" / "metrics.yml"
 # or the shorthand "<hf-username>/msk-pulse-api".
 GRADIO_SPACE_URL = os.environ.get("GRADIO_SPACE_URL", "http://localhost:7860")
 
+# ZeroGPU Spaces (the free shared-GPU tier) give unauthenticated callers a
+# very small shared quota before rejecting requests with "exceeded your
+# ZeroGPU runs limit." Passing a Hugging Face token authenticates the
+# request against the caller's own, much larger personal quota instead.
+# Not required for a locally-running Space (no GPU allocation involved
+# there), only for the deployed one -- so this is optional and None-safe.
+def _get_hf_token():
+    token = os.environ.get("HF_TOKEN")
+    if token:
+        return token
+    try:
+        return st.secrets.get("HF_TOKEN")
+    except Exception:
+        return None
+
+
+HF_TOKEN = _get_hf_token()
+
 
 @st.cache_resource
 def get_scoring_client():
+    if HF_TOKEN:
+        return Client(GRADIO_SPACE_URL, hf_token=HF_TOKEN)
     return Client(GRADIO_SPACE_URL)
 
 st.set_page_config(page_title="MSK Pulse", page_icon="🦴", layout="wide")
