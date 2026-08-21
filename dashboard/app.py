@@ -2,9 +2,9 @@
 MSK Pulse ops dashboard (Streamlit).
 
 Four pages: Executive Overview, Funnel, Cohorts & Retention, and Prior-Auth
-Risk Screen (calls the live scoring API). Reads directly from the dbt-built
-DuckDB warehouse -- run `dbt build --profiles-dir .` from warehouse/ before
-launching this app.
+Risk Screen (calls the live scoring model via a Gradio Space). Reads
+directly from the dbt-built DuckDB warehouse -- run
+`dbt build --profiles-dir .` from warehouse/ before launching this app.
 
 Run: streamlit run app.py
 """
@@ -15,18 +15,24 @@ import duckdb
 import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
-import requests
 import streamlit as st
+from gradio_client import Client
 
 HERE = Path(__file__).resolve().parent
 WAREHOUSE_DB = HERE.parent / "warehouse" / "msk_pulse.duckdb"
 METRICS_YML = HERE.parent / "metrics" / "metrics.yml"
 
-# Where the live scoring API is running. Defaults to a local uvicorn instance;
-# override with the SCORING_API_URL env var once deployed (e.g. to the
-# Hugging Face Spaces URL) so the same dashboard code works locally and in
-# production.
-API_URL = os.environ.get("SCORING_API_URL", "http://localhost:8000")
+# The deployed Gradio Space that serves the scoring model (see
+# api/gradio_app.py and DEPLOY.md). Defaults to a locally-running
+# `python gradio_app.py` instance; override with the GRADIO_SPACE_URL env
+# var once deployed, e.g. "https://<hf-username>-msk-pulse-api.hf.space"
+# or the shorthand "<hf-username>/msk-pulse-api".
+GRADIO_SPACE_URL = os.environ.get("GRADIO_SPACE_URL", "http://localhost:7860")
+
+
+@st.cache_resource
+def get_scoring_client():
+    return Client(GRADIO_SPACE_URL)
 
 st.set_page_config(page_title="MSK Pulse", page_icon="🦴", layout="wide")
 
@@ -188,7 +194,7 @@ def page_cohorts():
 
 def page_prior_auth():
     st.title("Prior-auth risk screen")
-    st.caption("Calls the live scoring API before a submission goes out.")
+    st.caption("Calls the live scoring model (Gradio Space) before a submission goes out.")
 
     with st.form("score_form"):
         c1, c2, c3 = st.columns(3)
@@ -212,19 +218,16 @@ def page_prior_auth():
         submitted = st.form_submit_button("Score submission")
 
     if submitted:
-        payload = {
-            "patient": {"age": int(age), "sex": sex},
-            "clinic_id": clinic_id, "payer": payer, "condition": condition,
-            "icd10_code": icd10_code, "cpt_code": cpt_code,
-        }
         try:
-            resp = requests.post(f"{API_URL}/score", json=payload, timeout=10)
-            resp.raise_for_status()
-            result = resp.json()
-        except requests.exceptions.RequestException as e:
+            client = get_scoring_client()
+            _summary_md, result = client.predict(
+                int(age), sex, payer, clinic_id, condition, icd10_code, cpt_code,
+                api_name="/score",
+            )
+        except Exception as e:
             st.error(
-                f"Couldn't reach the scoring API at `{API_URL}`. "
-                f"Set the `SCORING_API_URL` environment variable once the API is deployed. ({e})"
+                f"Couldn't reach the scoring model at `{GRADIO_SPACE_URL}`. "
+                f"Set the `GRADIO_SPACE_URL` environment variable once the Space is deployed. ({e})"
             )
             return
 
